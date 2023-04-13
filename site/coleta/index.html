@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Descarga GFx - Coleta Copiloto</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../assets/_mkdocstrings.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Descarga GFx";
+        var mkdocs_page_input_path = "coleta.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Coleta Copiloto
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Coleta GFx Copiloto</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../XVM/">XVM</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="./">Descarga GFx</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#conecta-ao-banco">Conecta ao banco</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#estabelecer-conexao-com-o-copiloto">Estabelecer conexão com o copiloto</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#comandos-de-configuracao-do-copiloto">Comandos de configuração do copiloto</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#coleta-das-mensagens-e-insert-no-banco">Coleta das mensagens e Insert no banco</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#a-funcao-message-em-partes">A função message em partes</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#main">Main</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#botando-para-rodar">Botando para rodar</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Coleta Copiloto</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+      <li>Descarga GFx</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="descarga-gfx">Descarga GFx</h1>
+<ul>
+<li>Arquivo coleta_GFx.py</li>
+</ul>
+<h2 id="conecta-ao-banco">Conecta ao banco</h2>
+<pre><code class="language-python">    ENDPOINT=&quot;localhost&quot;
+    PORT=&quot;5432&quot;
+    USER=&quot;postgres&quot;
+    DBNAME=&quot;inbox&quot;
+    connection = psycopg2.connect(host=ENDPOINT, user=USER, password='postgres', port=PORT, database=DBNAME)
+    cursor = connection.cursor() 
+</code></pre>
+<h2 id="estabelecer-conexao-com-o-copiloto">Estabelecer conexão com o copiloto</h2>
+<ul>
+<li>Função que estabelece uma conexão serial com um dispositivo em uma porta COM e retorna seu ID.</li>
+<li>Envia QVR para a porta COM utilizando a função generateXVM que deixa o comando no formato em que o
+copiloto irá entender</li>
+<li>Argumentos:
+    COM (str): A porta COM à qual o dispositivo está conectado.</li>
+<li>Retorna:
+    str: O ID do copiloto conectado.</li>
+</ul>
+<pre><code class="language-python">    async def conexao(COM):
+        s = serial.Serial(COM, 19200, timeout=10)
+        id = '-'
+        try:
+            for i in range(5):
+                xvm = XVM.generateXVM('1234',str(i).zfill(4),'&gt;QVR&lt;')
+                print(xvm)
+                s.write(xvm.encode())
+                resposta = s.readline().decode()
+                id = resposta.split(';')[1][3::]
+                if id != '1234':
+                    print(id)
+                    return id
+        except Exception:
+            print('PORTA SEM COMUNICAÇÃO')
+            pass
+</code></pre>
+<h2 id="comandos-de-configuracao-do-copiloto">Comandos de configuração do copiloto</h2>
+<ul>
+<li>Função que envia o comando &gt;TCFG53,2&lt; e &gt;VSIP0,TRM1&lt; para ativar a função de descarga do buffer GF0 pela serial</li>
+<li>É necessário utilizar a função generateXVM para formatar os comandos no formato XVM</li>
+<li>Argumentos:<ul>
+<li>COM (str): A porta COM à qual o dispositivo está conectado.</li>
+<li>device (str): id do copiloto </li>
+</ul>
+</li>
+<li>Retorna:
+    None</li>
+</ul>
+<pre><code class="language-python">async def configurar(COM,device):
+    s = serial.Serial(COM, 19200, timeout=10)
+    try:
+        for i in range(5):
+            xvm = XVM.generateXVM(device,str(i).zfill(4),'&gt;TCFG53,2&lt;')
+            print(xvm)
+            s.write(xvm.encode())
+            resposta = s.readline().decode()
+            print(resposta)
+            if resposta:
+                break
+    except Exception as error:
+        print('error', error)
+    try:
+        for i in range(5):
+            xvm = XVM.generateXVM(device,str(i).zfill(4),'&gt;VSIP0,TRM1&lt;')
+            print(xvm)
+            s.write(xvm.encode())
+            resposta = s.readline().decode()
+            print(resposta)
+            if resposta:
+                break
+    except Exception as error:
+        print('error', error)
+</code></pre>
+<h2 id="coleta-das-mensagens-e-insert-no-banco">Coleta das mensagens e Insert no banco</h2>
+<ul>
+<li>Função messages é responsável por enviar um comando &gt;QUV00rTRM&lt; no formato XVM, quando o copiloto receber o comando ele inicia a descarga das mensagens do buffer GF0</li>
+<li>O copiloto só entrega a proxima mensagem se receber o ACK de resposta, ACK é gerado no formato XVM utilizando a função generateAck, que recebe o device_id e a sequence da mensagem </li>
+<li>A cada mensagem entregue do copiloto essa mensagem é inserida na tabela coleta que contém o device_id, a mensagem entregue e a reception_datetime como colunas</li>
+</ul>
+<pre><code class="language-python">async def messages(COM,device):
+    resposta = ''
+    s = serial.Serial(COM, 19200,timeout=3)
+    xvm = XVM.generateXVM(device,'8000','&gt;QUV00rTRM&lt;')
+    s.write(xvm.encode())
+    while True:
+        resposta = s.readline().decode()
+        print(resposta)
+        if resposta == '':
+            print('acabou')
+            break
+        else:
+            xvmMessage = XVM.parseXVM(resposta)
+            msg = xvmMessage[0]
+            device_id = xvmMessage[1]
+            sequence = xvmMessage[2]
+            print('msg:{},  device_id:{},  sequence:{}'.format(msg,device_id,sequence))
+            ack = XVM.generateAck(device_id,sequence)
+            print(ack)
+            s.write(ack.encode())
+            cursor.execute('INSERT INTO coleta (&quot;device_id&quot;, &quot;message&quot;) values (\'{}\', \'{}\');'.format(device_id, resposta))
+            connection.commit()
+</code></pre>
+<h3 id="a-funcao-message-em-partes">A função message em partes</h3>
+<ul>
+<li>Envia o comando para o copiloto descarregar as mensagens</li>
+</ul>
+<pre><code class="language-python">async def messages(COM,device):
+    resposta = ''
+    s = serial.Serial(COM, 19200,timeout=3)
+    xvm = XVM.generateXVM(device,'8000','&gt;QUV00rTRM&lt;')
+    s.write(xvm.encode())
+</code></pre>
+<ul>
+<li>Loop para coletar as mensagens até acabar</li>
+</ul>
+<pre><code class="language-python">    while True:
+        resposta = s.readline().decode()
+        print(resposta)
+        if resposta == '':
+            print('acabou')
+            break
+</code></pre>
+<ul>
+<li>Faz o parser das mensagens para obter a sequence correta,utilizando a função parserXVM, e em seguida gera o ACK, utilizando a função generateAck </li>
+</ul>
+<pre><code class="language-python">        else:
+            xvmMessage = XVM.parseXVM(resposta)
+            msg = xvmMessage[0]
+            device_id = xvmMessage[1]
+            sequence = xvmMessage[2]
+            print('msg:{},  device_id:{},  sequence:{}'.format(msg,device_id,sequence))
+            ack = XVM.generateAck(device_id,sequence)
+            print(ack)
+            s.write(ack.encode())
+</code></pre>
+<ul>
+<li>Faz o insert no banco postgres </li>
+</ul>
+<pre><code class="language-python">            cursor.execute('INSERT INTO coleta (&quot;device_id&quot;, &quot;message&quot;) values (\'{}\', \'{}\');'.format(device_id, resposta))
+            connection.commit()
+</code></pre>
+<h2 id="main">Main</h2>
+<ul>
+<li>Função Main responsavel por chamar as outras funções, utiliznado os argumentos necessários.</li>
+</ul>
+<pre><code class="language-python">async def main():
+    ports = serial.tools.list_ports.comports()
+    for p in ports:
+        print(p)
+        print('estabelecendo conexao...')
+        id = await asyncio.create_task(conexao(p.device))
+        await asyncio.create_task(configurar(p.device,id))
+        await asyncio.create_task(messages(p.device,id))
+</code></pre>
+<h2 id="botando-para-rodar">Botando para rodar</h2>
+<pre><code class="language-python">if __name__ == '__main__':
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../XVM/" class="btn btn-neutral float-left" title="XVM"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../XVM/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme_extra.js" defer></script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>
