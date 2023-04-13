@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <link rel="shortcut icon" href="../img/favicon.ico" />
-    <title>XVM - Coleta Copiloto</title>
+    <title>Banco de Dados - Coleta Copiloto</title>
     <link rel="stylesheet" href="../css/theme.css" />
     <link rel="stylesheet" href="../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
@@ -13,8 +13,8 @@
     
       <script>
         // Current page data
-        var mkdocs_page_name = "XVM";
-        var mkdocs_page_input_path = "XVM.md";
+        var mkdocs_page_name = "Banco de Dados";
+        var mkdocs_page_input_path = "banco.md";
         var mkdocs_page_url = null;
       </script>
     
@@ -45,24 +45,16 @@
                 <li class="toctree-l1"><a class="reference internal" href="..">Coleta GFx Copiloto</a>
                 </li>
               </ul>
-              <ul class="current">
-                <li class="toctree-l1 current"><a class="reference internal current" href="./">XVM</a>
-    <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#calcchecksum">calcCheckSum</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#parsexvm">parseXVM</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#generateack">generateAck</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#generatexvm">generateXVM</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#isvalidxvm">isValidXVM</a>
-    </li>
-    </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../XVM/">XVM</a>
                 </li>
               </ul>
-              <ul>
-                <li class="toctree-l1"><a class="reference internal" href="../banco/">Banco de Dados</a>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="./">Banco de Dados</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#initdb">init.db</a>
+    </li>
+    </ul>
                 </li>
               </ul>
               <ul>
@@ -83,7 +75,7 @@
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href=".." class="icon icon-home" alt="Docs"></a> &raquo;</li>
-      <li>XVM</li>
+      <li>Banco de Dados</li>
     <li class="wy-breadcrumbs-aside">
     </li>
   </ul>
@@ -92,65 +84,30 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h1 id="xvm">XVM</h1>
-<h2 id="calcchecksum">calcCheckSum</h2>
+                <h1 id="banco-de-dados">Banco de Dados</h1>
+<h2 id="initdb">init.db</h2>
 <ul>
-<li>Função responsável para calcular o checksum de cada mensagem no padrão XVM</li>
-<li>Recebe: mensagem(str)</li>
+<li>Exemplo de tabela para a inserção dos dados, </li>
+<li>Colunas:<ul>
+<li>device_id: o id do copiloto</li>
+<li>message: a mensagem coletada pela serial</li>
+<li>reception_datetime: data e hora da coleta da mensagem, timezone de São Paulo</li>
 </ul>
-<pre><code class="language-python">def calcCheckSum (msg):
-    num = msg.find(';*')+1
-    calc = 0
-    for i in range(num): calc ^= ord(msg[i])
-    return calc
-</code></pre>
-<h2 id="parsexvm">parseXVM</h2>
-<ul>
-<li>Função responsável por separar todos os atributos contidos em uma mensagem XVM</li>
-<li>Recebe: mensagem(str)</li>
+</li>
 </ul>
-<pre><code class="language-python">def parseXVM(msg):
-    xvmMessage=msg.split(';')  
-    message  = xvmMessage[0]
-    id       = xvmMessage[1][3:]
-    sequence = int(xvmMessage[2][1:],16)
-    checksum = int(xvmMessage[3][1:3],16)
-    return (message,id,sequence,checksum) 
-</code></pre>
-<h2 id="generateack">generateAck</h2>
-<ul>
-<li>Função que gera o ACK do copiloto</li>
-<li>Recebe: id (str) e sequence (str)</li>
-</ul>
-<pre><code class="language-python">def generateAck(id,sequence):
-    resp = '&gt;ACK;ID='+id+';#'+format(sequence,'04X')+';*'
-    resp = resp+format(calcCheckSum(resp),'02X')+'&lt;\r\n'
-    return resp
-</code></pre>
-<h2 id="generatexvm">generateXVM</h2>
-<ul>
-<li>Função que gera uma mensagem XVM</li>
-<li>Recebe: id (str), sequence (str), message (str)</li>
-</ul>
-<pre><code class="language-python">def generateXVM(id,sequence,message):
-    resp = message+';ID='+id+';#'+sequence+';*'
-    resp = resp+format(calcCheckSum(resp),'02X')+'&lt;\r\n'
-    return resp
-</code></pre>
-<h2 id="isvalidxvm">isValidXVM</h2>
-<ul>
-<li>Função valida se a mensagem recebida é uma mensagem no padrão XVM</li>
-<li>Recebe: id (str), sequence (str), message (str)</li>
-</ul>
-<pre><code class="language-python">def isValidXVM(msg):
-    return 1 if calcCheckSum(msg)==parseXVM(msg)[3] else 0
+<pre><code class="language-sql">CREATE TABLE IF NOT EXISTS public.coleta
+(
+    device_id text COLLATE pg_catalog.&quot;default&quot; NOT NULL,
+    message text COLLATE pg_catalog.&quot;default&quot;,
+    reception_datetime timestamp with time zone DEFAULT timezone('America/Sao_Paulo', now())
+);
 </code></pre>
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href=".." class="btn btn-neutral float-left" title="Coleta GFx Copiloto"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../banco/" class="btn btn-neutral float-right" title="Banco de Dados">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../XVM/" class="btn btn-neutral float-left" title="XVM"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../coleta/" class="btn btn-neutral float-right" title="Descarga GFx">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -173,10 +130,10 @@
   <span class="rst-current-version" data-toggle="rst-current-version">
     
     
-      <span><a href=".." style="color: #fcfcfc">&laquo; Previous</a></span>
+      <span><a href="../XVM/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
-      <span><a href="../banco/" style="color: #fcfcfc">Next &raquo;</a></span>
+      <span><a href="../coleta/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>
